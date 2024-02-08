@@ -21,13 +21,9 @@ import com.nsystem.jetpackmedia3experiment.ui.theme.JetpackMedia3ExperimentTheme
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var playerView: PlayerView
-
-    private lateinit var sessionToken: SessionToken
+    private lateinit var player: Player
 
     private lateinit var controllerFuture: ListenableFuture<MediaController>
-
-    private lateinit var player: Player
 
     private val isPlayerInitialized = mutableStateOf(false)
 
@@ -43,7 +39,7 @@ class MainActivity : ComponentActivity() {
                     if (isPlayerInitialized.value) {
                         AndroidView(
                             modifier = Modifier.fillMaxSize(),
-                            factory = { context -> PlayerView(context).also { playerView = it } },
+                            factory = { context -> PlayerView(context) },
                             update = { playerView ->
                                 playerView.player = player
                                 player.setMediaItem(MediaItem.fromUri(MEDIA_URL))
@@ -58,12 +54,13 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        MediaController.releaseFuture(controllerFuture)
         player.release()
         super.onDestroy()
     }
 
     private fun initMediaController() {
-        sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
+        val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
         controllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
         controllerFuture.addListener(
             {
